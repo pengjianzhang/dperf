@@ -64,6 +64,7 @@
 
 #define HTTP_HOST_MAX       128
 #define HTTP_PATH_MAX       256
+#define PAYLOAD_SIZE_MAX    (93L * 1024 * 1024 * 1024)
 
 #define HTTP_HOST_DEFAULT   "dperf"
 #define HTTP_PATH_DEFAULT   "/"
@@ -107,7 +108,7 @@ struct config {
     char http_host[HTTP_HOST_MAX];
     char http_path[HTTP_PATH_MAX];
 
-    int payload_size;
+    long payload_size;
     int packet_size;
     int mss;
 

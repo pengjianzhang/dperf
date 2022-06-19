@@ -147,7 +147,7 @@ static char *config_str_find_nondigit(char *s, bool float_enable)
     return NULL;
 }
 
-static int config_parse_number(char *str, bool float_enable, bool rate_enable)
+static long config_parse_number(char *str, bool float_enable, bool rate_enable)
 {
     char *p = NULL;
     int rate = 1;
@@ -179,7 +179,7 @@ static int config_parse_number(char *str, bool float_enable, bool rate_enable)
     if (float_enable) {
         val = atof(str) * rate;
     } else {
-        val = atoi(str) * rate;
+        val = atol(str) * rate;
     }
 
     if (val < 0) {
@@ -809,7 +809,7 @@ static int config_parse_wait(int argc, char *argv[], void *data)
 
 static int config_parse_payload_size(int argc, char *argv[], void *data)
 {
-    int payload_size = 0;
+    long payload_size = 0;
     struct config *cfg = data;
 
     if (argc != 2) {
@@ -1635,10 +1635,9 @@ static int config_packet_headers_size(struct config *cfg)
 
 static int config_check_size(struct config *cfg)
 {
-    int payload_size = 0;
+    long payload_size = 0;
     int packet_size_max = PACKET_SIZE_MAX;
     int headers_size = 0;
-
 
     if ((cfg->packet_size != 0) && (cfg->payload_size != 0)) {
         printf("Error: both payload_size and packet_size are set\n");
@@ -1663,8 +1662,21 @@ static int config_check_size(struct config *cfg)
         }
         payload_size = cfg->packet_size - headers_size;
     } else if (cfg->payload_size) {
-        if ((cfg->payload_size + headers_size) > packet_size_max) {
-            printf("Error: big payload_size %d\n", cfg->payload_size);
+
+        if (cfg->http) {
+            if (cfg->payload_size > PAYLOAD_SIZE_MAX) {
+                printf("Error: payload_size is larger than %lu\n", PAYLOAD_SIZE_MAX);
+                return -1;
+            }
+            if (cfg->payload_size > cfg->mss) {
+                if (!cfg->server) {
+                    printf("Error: client payload_size is larger than mss\n");
+                    return -1;
+                }
+                cfg->payload_size = ((cfg->payload_size + cfg->mss - 1) / cfg->mss) *  cfg->mss;
+            }
+        } else if ((cfg->payload_size + headers_size) > packet_size_max) {
+            printf("Error: big payload_size %ld\n", cfg->payload_size);
             return -1;
         }
 

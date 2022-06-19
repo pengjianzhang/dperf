@@ -25,6 +25,7 @@
 #include "server.h"
 #include "udp.h"
 #include "lldp.h"
+#include "http.h"
 
 #include <rte_cycles.h>
 #include <rte_mempool.h>
@@ -196,6 +197,10 @@ struct work_space *work_space_new(struct config *cfg, int id)
     ws->id = id;
     ws->ipv6 = cfg->af == AF_INET6;
     ws->http = cfg->http;
+    if (cfg->http && cfg->server && (cfg->payload_size > cfg->mss)) {
+        ws->http_content_length = cfg->payload_size - HTTP_HEADER_SIZE;
+    }
+    ws->mss = cfg->mss;
     ws->flood = cfg->flood;
     ws->cfg = cfg;
     ws->tos = cfg->tos;

@@ -71,6 +71,7 @@ struct work_space {
     uint8_t port_id;
     uint8_t queue_id;
 
+    uint16_t mss;
     uint16_t ip_id;
     bool lldp;
     bool exit;
@@ -79,6 +80,7 @@ struct work_space {
     uint32_t vni:24;
     uint32_t vxlan:8;
     uint32_t vtep_ip; /* each queue has a vtep ip */
+    long http_content_length;
     struct tick_time time;
     struct cpuload load;
     struct client_launch client_launch;
@@ -89,6 +91,7 @@ struct work_space {
         struct mbuf_cache udp;
         struct mbuf_cache tcp;
     };
+
 
     FILE *log;
     struct config *cfg;

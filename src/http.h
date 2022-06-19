@@ -47,9 +47,13 @@ static inline void http_parse_request(const uint8_t *data, uint16_t len)
     }
 }
 
-#define HTTP_DATA_MIN_SIZE  70
-void http_set_payload(struct config *cfg, int payload_size);
+#define HTTP_HEADER_SIZE    70
+#define HTTP_DATA_MIN_SIZE  HTTP_HEADER_SIZE
+#define HTTP_DATA_MAX_SIZE  PAYLOAD_SIZE_MAX
+
+void http_set_payload(struct config *cfg, long payload_size);
 const char *http_get_request(void);
 const char *http_get_response(void);
+int http_page_init(struct work_space *ws);
 
 #endif

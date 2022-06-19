@@ -605,6 +605,17 @@ static inline void tcp_server_process_data(struct work_space *ws, struct socket 
             if (sk->keepalive == 0) {
                 tx_flags |= TH_FIN;
             }
+#ifdef HTTP_PARSE
+            sk->http_length = ws->http_content_length;
+            if (sk->http_length) {
+                sk->http_length -= ws->mss - HTTP_HEADER_SIZE;
+            }
+        } else {
+            if (ws->http_content_length) {
+                tx_flags |= TH_PUSH | TH_ACK;
+                ws->http_content_length -= ws->mss;
+            }
+#endif
         }
     }
 
@@ -644,7 +655,7 @@ static inline uint8_t http_client_process_data(struct work_space *ws, struct soc
     int ret = 0;
     int8_t tx_flags = 0;
 
-    ret = http_parse_run(sk, data, data_len);
+    ret = http_client_parse_run(sk, data, data_len);
     if (ret == HTTP_PARSE_OK) {
         if ((rx_flags & TH_FIN) == 0) {
             tcp_ack_delay_add(ws, sk);

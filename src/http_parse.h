@@ -52,7 +52,7 @@ enum {
  *  1   end
  *  -1  error
  * */
-int http_parse_run(struct socket *sk, const uint8_t *data, int data_len);
+int http_client_parse_run(struct socket *sk, const uint8_t *data, int data_len);
 
 
 #endif

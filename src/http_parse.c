@@ -289,7 +289,7 @@ static inline int http_parse_body(struct socket *sk, const uint8_t *data, int da
     }
 }
 
-int http_parse_run(struct socket *sk, const uint8_t *data, int data_len)
+int http_client_parse_run(struct socket *sk, const uint8_t *data, int data_len)
 {
     int len = 0;
 
@@ -314,4 +314,12 @@ int http_parse_run(struct socket *sk, const uint8_t *data, int data_len)
         return HTTP_PARSE_OK;
     }
 }
+
+/*
+int http_server_parse_run(struct socket *sk, const uint8_t *data, int data_len)
+{
+    return 0;
+}
+*/
+
 #endif
