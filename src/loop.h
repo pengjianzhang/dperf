@@ -287,12 +287,12 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
     }
 
     for (i = 0; i < 10000; i++) {
-        if (nb_rx == total) {
+        if (nb_rx >= total) {
             if (i > 0) {
                 tsc1 = rte_rdtsc();
             }
             tsc2 = tsc1 - tsc0;
-            printf("tsc %lu %f us loop %i\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i);
+            printf("tsc %lu %f us loop %d nb_rx %d\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i, nb_rx);
             break;
         }
 
