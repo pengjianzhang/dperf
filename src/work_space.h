@@ -126,7 +126,7 @@ static inline void work_space_tx_flush(struct work_space *ws)
         return;
     }
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 1000; i++) {
         num = queue->tail - queue->head;
         if (num > queue->tx_burst) {
             num = queue->tx_burst;
@@ -138,6 +138,7 @@ static inline void work_space_tx_flush(struct work_space *ws)
         if (queue->head == queue->tail) {
             queue->head = 0;
             queue->tail = 0;
+            printf("flush %d num %d \n", i, num);
             return;
         } else if (queue->tail < TX_QUEUE_SIZE) {
             return;
@@ -178,11 +179,19 @@ static inline void work_space_tx_send_tcp(struct work_space *ws, struct rte_mbuf
     work_space_tx_send(ws, mbuf);
 }
 
+#define SEND_ONCE   8
 static inline void work_space_tx_send_udp(struct work_space *ws, struct rte_mbuf *mbuf)
 {
+    int i = 0;
     csum_offload_ip_tcpudp(mbuf, RTE_MBUF_F_TX_UDP_CKSUM);
     net_stats_udp_tx();
+
+    for (i = 0; i < (SEND_ONCE - 1); i++) {
+        rte_mbuf_refcnt_update(mbuf, 1);
+        work_space_tx_send(ws, mbuf);
+    }
     work_space_tx_send(ws, mbuf);
+    work_space_tx_flush(ws);
 }
 
 static inline uint64_t work_space_client_launch_num(struct work_space *ws)

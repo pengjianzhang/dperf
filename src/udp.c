@@ -136,9 +136,9 @@ static inline struct rte_mbuf *udp_new_packet(struct work_space *ws, struct sock
 static inline struct rte_mbuf* udp_send(struct work_space *ws, struct socket *sk)
 {
     struct rte_mbuf *m = NULL;
-
     m = udp_new_packet(ws, sk);
     if (m) {
+        
         work_space_tx_send_udp(ws, m);
     }
 

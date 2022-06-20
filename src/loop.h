@@ -268,8 +268,41 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
     struct rte_mbuf **mbuf_rx = ws->mbuf_rx;
     uint16_t port = ws->port_id;
     uint16_t queue = ws->queue_id;
+    int n;
+    int total = SEND_ONCE;
+    uint64_t tsc0 = 0;
+    uint64_t tsc1 = 0;
+    uint64_t tsc2 = 0;
+    struct rte_mbuf **mbuf_p = mbuf_rx;
 
-    nb_rx = rte_eth_rx_burst(port, queue, mbuf_rx, RX_BURST_MAX);
+    tsc0 = rte_rdtsc();
+    for (i = 0; i < 10; i++) {
+        tsc1 = tsc0 = rte_rdtsc();
+        n = rte_eth_rx_burst(port, queue, mbuf_p, RX_BURST_MAX);
+        if (n > 0) {
+            mbuf_p += n;
+            nb_rx += n;
+            break;
+        }
+    }
+
+    for (i = 0; i < 10000; i++) {
+        if (nb_rx == total) {
+            if (i > 0) {
+                tsc1 = rte_rdtsc();
+            }
+            tsc2 = tsc1 - tsc0;
+            printf("tsc %lu %f us loop %i\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i);
+            break;
+        }
+
+        n = rte_eth_rx_burst(port, queue, mbuf_p, RX_BURST_MAX);
+        if (n > 0) {
+            mbuf_p += n;
+            nb_rx += n;
+        }
+    }
+
     if (nb_rx) {
         if (nb_rx > MBUF_PREFETCH_NUM) {
             for (i = 0; i < MBUF_PREFETCH_NUM; i++) {
