@@ -135,13 +135,17 @@ static inline struct rte_mbuf *udp_new_packet(struct work_space *ws, struct sock
 
 static inline struct rte_mbuf* udp_send(struct work_space *ws, struct socket *sk)
 {
+    int i = 0;
     struct rte_mbuf *m = NULL;
-    m = udp_new_packet(ws, sk);
-    if (m) {
-        
-        work_space_tx_send_udp(ws, m);
+
+    for (i = 0; i < SEND_ONCE; i++) {
+        m = udp_new_packet(ws, sk);
+        if (m) {
+            work_space_tx_send_udp(ws, m);
+        }
     }
 
+    work_space_tx_flush(ws);
     return m;
 }
 

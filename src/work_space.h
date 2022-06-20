@@ -182,6 +182,13 @@ static inline void work_space_tx_send_tcp(struct work_space *ws, struct rte_mbuf
 #define SEND_ONCE   4
 static inline void work_space_tx_send_udp(struct work_space *ws, struct rte_mbuf *mbuf)
 {
+    csum_offload_ip_tcpudp(mbuf, RTE_MBUF_F_TX_UDP_CKSUM);
+    net_stats_udp_tx();
+    work_space_tx_send(ws, mbuf);
+}
+/*
+static inline void work_space_tx_send_udp(struct work_space *ws, struct rte_mbuf *mbuf)
+{
     int i = 0;
     csum_offload_ip_tcpudp(mbuf, RTE_MBUF_F_TX_UDP_CKSUM);
     net_stats_udp_tx();
@@ -193,7 +200,7 @@ static inline void work_space_tx_send_udp(struct work_space *ws, struct rte_mbuf
     work_space_tx_send(ws, mbuf);
     work_space_tx_flush(ws);
 }
-
+*/
 static inline uint64_t work_space_client_launch_num(struct work_space *ws)
 {
     struct tick_time *tt = &ws->time;
