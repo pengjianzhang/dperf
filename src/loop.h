@@ -269,6 +269,7 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
     uint16_t port = ws->port_id;
     uint16_t queue = ws->queue_id;
     int n;
+    int first = 0;
     int total = SEND_ONCE;
     uint64_t tsc0 = 0;
     uint64_t tsc1 = 0;
@@ -282,8 +283,13 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
         if (n > 0) {
             mbuf_p += n;
             nb_rx += n;
+            first = n;
             break;
         }
+    }
+
+    if (nb_rx == 0) {
+        return 0;
     }
 
     for (i = 0; i < 10000; i++) {
@@ -292,7 +298,7 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
                 tsc1 = rte_rdtsc();
             }
             tsc2 = tsc1 - tsc0;
-            printf("tsc %lu %f us loop %d nb_rx %d\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i, nb_rx);
+            printf("tsc %lu %f us loop %d nb_rx %d first = %d\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i, nb_rx, first);
             break;
         }
 
