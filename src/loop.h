@@ -298,7 +298,7 @@ static inline int server_recv_mbuf(struct work_space *ws, l3_input_t l3_input,
                 tsc1 = rte_rdtsc();
             }
             tsc2 = tsc1 - tsc0;
-            printf("tsc %lu %f us loop %d nb_rx %d first = %d\n", tsc2, (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, i, nb_rx, first);
+            printf("%f us\ttsc %lu\tloop %d\tnb_rx %d\tfirst %d\n", (tsc2 *1.0 /g_tsc_per_second)*1000 * 1000, tsc2, i, nb_rx, first);
             break;
         }
 
