@@ -240,7 +240,7 @@ static int config_parse_keepalive_request_num(struct config *cfg, char *str)
         return -1;
     }
 
-    cfg->keepalive_request_num = val / 100;
+    cfg->keepalive_request_num = val;
     return 0;
 }
 
@@ -2090,4 +2090,6 @@ uint32_t config_get_total_socket_num(struct config *cfg, int id)
 void config_set_tsc(struct config *cfg, uint64_t hz)
 {
     cfg->keepalive_request_interval *= (hz / 1000);
+    cfg->keepalive_request_interval /= 100;
+
 }
