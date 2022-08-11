@@ -240,7 +240,7 @@ static int config_parse_keepalive_request_num(struct config *cfg, char *str)
         return -1;
     }
 
-    cfg->keepalive_request_num = val;
+    cfg->keepalive_request_num = val / 100;
     return 0;
 }
 

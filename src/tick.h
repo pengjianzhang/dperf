@@ -23,8 +23,8 @@
 #include <sys/time.h>
 #include <rte_cycles.h>
 
-/* 1 tick = 0.1 ms */
-#define TICKS_PER_SEC (10000)
+/* 1 tick = 0.01 ms */
+#define TICKS_PER_SEC (100 * 1000)
 #define TSC_PER_SEC g_tsc_per_second
 
 extern uint64_t g_tsc_per_second;
