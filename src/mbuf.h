@@ -87,6 +87,8 @@ extern __thread struct mbuf_free_pool g_mbuf_free_pool;
 static inline void mbuf_free2(struct rte_mbuf *m)
 {
     if (m) {
+        rte_pktmbuf_free(m);
+/*
         m->next = g_mbuf_free_pool.head;
         g_mbuf_free_pool.head = m;
         g_mbuf_free_pool.num++;
@@ -95,6 +97,7 @@ static inline void mbuf_free2(struct rte_mbuf *m)
             g_mbuf_free_pool.head = NULL;
             g_mbuf_free_pool.num = 0;
         }
+*/
     }
 }
 
