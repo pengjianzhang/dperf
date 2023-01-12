@@ -201,7 +201,8 @@ static int port_init_port_id(struct netif_port *port)
         pci = port->pci_list[i];
         if (rte_eth_dev_get_port_by_name(pci, &port_id) != 0) {
             printf("cannot found port id by pic %s\n", pci);
-            return -1;
+        } else {
+            port_id = (uint16_t)i;
         }
 
         port->port_id_list[i] = port_id;
