@@ -111,6 +111,7 @@ struct socket_table {
     uint16_t port_num;
     uint16_t port_min;
     uint16_t port_max;
+    uint16_t port_hop;
 
     uint8_t rss;
     uint8_t rss_id;
@@ -181,6 +182,11 @@ static inline struct socket *socekt_table_get_socket_rss(struct socket_table *st
         }
     }
 
+    sp->next += st->port_hop;
+    if (sp->next >= sp->num) {
+        sp->next = 0;
+    }
+
     return sk;
 }
 
@@ -192,7 +198,7 @@ static inline struct socket *socekt_table_get_socket(struct socket_table *st)
 retry:
     if (st->rss == RSS_NONE) {
         sk = &(sp->base[sp->next]);
-        sp->next++;
+        sp->next += st->port_hop;
         if (sp->next >= sp->num) {
             sp->next = 0;
         }
