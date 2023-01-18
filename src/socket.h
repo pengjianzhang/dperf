@@ -108,10 +108,10 @@ struct socket_pool {
 
 struct socket_table {
     uint32_t server_ip;
+    uint32_t port_hop;
     uint16_t port_num;
     uint16_t port_min;
     uint16_t port_max;
-    uint16_t port_hop;
 
     uint8_t rss;
     uint8_t rss_id;
