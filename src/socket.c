@@ -234,9 +234,7 @@ int socket_table_init(struct work_space *ws)
     st->port_max = cfg->listen + cfg->listen_num - 1;
     st->port_num = cfg->listen_num;
     if (cfg->client_hop) {
-        st->port_hop = cfg->lport_max - cfg->lport_min + 2;
-    } else {
-        st->port_hop = 1;
+        st->client_hop = 1;
     }
 
     if (cfg->server) {

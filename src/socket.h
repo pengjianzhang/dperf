@@ -108,11 +108,11 @@ struct socket_pool {
 
 struct socket_table {
     uint32_t server_ip;
-    uint32_t port_hop;
     uint16_t port_num;
     uint16_t port_min;
     uint16_t port_max;
 
+    uint8_t client_hop;
     uint8_t rss;
     uint8_t rss_id;
     uint8_t rss_num;
@@ -182,11 +182,6 @@ static inline struct socket *socekt_table_get_socket_rss(struct socket_table *st
         }
     }
 
-    sp->next += st->port_hop;
-    if (sp->next >= sp->num) {
-        sp->next = 0;
-    }
-
     return sk;
 }
 
@@ -198,7 +193,7 @@ static inline struct socket *socekt_table_get_socket(struct socket_table *st)
 retry:
     if (st->rss == RSS_NONE) {
         sk = &(sp->base[sp->next]);
-        sp->next += st->port_hop;
+        sp->next++;
         if (sp->next >= sp->num) {
             sp->next = 0;
         }
@@ -208,6 +203,13 @@ retry:
 
     if (unlikely(sk->state == SK_LISTEN)) {
         goto retry;
+    }
+
+    if (st->client_hop) {
+        sp->next += 65535;
+        if (sp->next >= sp->num) {
+            sp->next = 0;
+        }
     }
 
     return sk;
