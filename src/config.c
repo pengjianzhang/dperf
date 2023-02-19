@@ -40,6 +40,7 @@
 
 static int config_parse_daemon(int argc, char *argv[], void *data);
 static int config_parse_keepalive(int argc, char *argv[], void *data);
+static int config_parse_pipeline(int argc, char *argv[], void *data);
 static int config_parse_mode(int argc, char *argv[], void *data);
 static int config_parse_cpu(int argc, char *argv[], void *data);
 static int config_parse_socket_mem(int argc, char *argv[], void *data);
@@ -84,6 +85,7 @@ static struct config_keyword g_config_keywords[] = {
     {"daemon", config_parse_daemon, ""},
     {"keepalive", config_parse_keepalive, "Interval(Timeout) [Number[0-" DEFAULT_STR(KEEPALIVE_REQ_NUM) "]], "
                 "eg 1ms/10us/1s"},
+    {"pipeline", config_parse_pipeline, "Number[" DEFAULT_STR(PIPELINE_MIN) "-" DEFAULT_STR(PIPELINE_MAX)"], default " DEFAULT_STR(PIPELINE_DEFAULT)},
     {"mode", config_parse_mode, "client/server"},
     {"cpu", config_parse_cpu, "n0 n1 n2-n3..., eg 0-4 7 8 9 10"},
     {"socket_mem", config_parse_socket_mem, "n0,n1,n2..."},
@@ -226,7 +228,7 @@ static int config_parse_keepalive_request_interval(struct config *cfg, char *str
     }
 
     val = atoi(str);
-    if (val <= 0) {
+    if (val < 0) {
         return -1;
     }
 
@@ -287,7 +289,32 @@ static int config_parse_keepalive(int argc, char *argv[], void *data)
         }
     }
 
+    if ((cfg->keepalive_request_interval_us == 0) && (cfg->keepalive_request_num != 0)) {
+        return -1;
+    }
+
     cfg->keepalive = true;
+    return 0;
+}
+
+static int config_parse_pipeline(int argc, char *argv[], void *data)
+{
+    int val = 0;
+    struct config *cfg = data;
+
+    if (argc != 2) {
+        return -1;
+    }
+
+    if ((val = atoi(argv[1])) < 0) {
+        return -1;
+    }
+
+    if ((val < PIPELINE_MIN) || (val > PIPELINE_MAX)) {
+        return -1;
+    }
+
+    cfg->pipeline = (uint8_t)val;
     return 0;
 }
 
@@ -1984,6 +2011,15 @@ static int config_check_keepalive(struct config *cfg)
             return -1;
         }
 
+        if (cfg->keepalive == false) {
+            return 0;
+        }
+
+        if (cfg->flood && (cfg->keepalive_request_interval_us == 0)) {
+            printf("Error: 'flood' requires a positive keepalive request interval\n");
+            return -1;
+        }
+
         /* interval is less 100us, eg 10us, 20us ...  */
         if (cfg->keepalive_request_interval_us < 50) {
            /* 5 us */
@@ -2003,6 +2039,35 @@ static int config_check_keepalive(struct config *cfg)
         cfg->ticks_per_sec = ticks_per_sec;
     } else {
         cfg->keepalive_request_num = 0;
+    }
+
+    return 0;
+}
+
+static int config_check_pipeline(struct config *cfg)
+{
+    if (cfg->pipeline == 0) {
+        return 0;
+    }
+
+    if (cfg->server) {
+        printf("Error: \'pipeline\' cannot set in server mode\n");
+        return -1;
+    }
+
+    if (cfg->protocol == IPPROTO_TCP) {
+        printf("Error: \'pipeline\' cannot support tcp\n");
+        return -1;
+    }
+
+    if (!cfg->keepalive) {
+        printf("Error: \'pipeline\' requires \'keepalive\'\n");
+        return -1;
+    }
+
+    if (cfg->keepalive_request_interval_us) {
+        printf("Error: \'pipeline\' requires zero keepalive interval\n");
+        return -1;
     }
 
     return 0;
@@ -2162,6 +2227,10 @@ int config_parse(int argc, char **argv, struct config *cfg)
     }
 
     if (config_check_keepalive(cfg) < 0) {
+        return -1;
+    }
+
+    if (config_check_pipeline(cfg) < 0) {
         return -1;
     }
 
