@@ -233,7 +233,7 @@ static int config_parse_keepalive_request_interval(struct config *cfg, char *str
     }
 
     if (rate == 1) {
-        if ((val % 10) != 0) {
+        if ((val > 1) && (val % 10) != 0) {
             printf("Error: keepalive request interval must be a multiple of 10us\n");
             return -1;
         }
@@ -2021,7 +2021,10 @@ static int config_check_keepalive(struct config *cfg)
         }
 
         /* interval is less 100us, eg 10us, 20us ...  */
-        if (cfg->keepalive_request_interval_us < 50) {
+        if (cfg->keepalive_request_interval_us < 10) {
+            /* 0.5 us */
+            ticks_per_sec = 1000 * 1000 * 2;
+        } else if (cfg->keepalive_request_interval_us < 50) {
            /* 5 us */
             ticks_per_sec = 1000 * 100 * 2;
         } else if (cfg->keepalive_request_interval_us < 100) {
@@ -2064,12 +2067,12 @@ static int config_check_pipeline(struct config *cfg)
         printf("Error: \'pipeline\' requires \'keepalive\'\n");
         return -1;
     }
-
+/*
     if (cfg->keepalive_request_interval_us) {
         printf("Error: \'pipeline\' requires zero keepalive interval\n");
         return -1;
     }
-
+*/
     return 0;
 }
 
