@@ -151,6 +151,8 @@ static inline void udp_send_request(struct work_space *ws, struct socket *sk)
 
 static void udp_socket_keepalive_timer_handler(struct work_space *ws, struct socket *sk)
 {
+    int pipeline = g_config.pipeline;
+
     if (work_space_in_duration(ws)) {
         /* rss auto: this socket is closed by another worker */
         if (unlikely(sk->laddr == 0)) {
@@ -163,7 +165,10 @@ static void udp_socket_keepalive_timer_handler(struct work_space *ws, struct soc
             net_stats_udp_rt();
         }
 
-        udp_send_request(ws, sk);
+        do {
+            udp_send_request(ws, sk);
+            pipeline--;
+        } while (pipeline > 0);
         if (g_config.keepalive_request_interval) {
             socket_start_keepalive_timer(sk, work_space_tsc(ws));
         }
