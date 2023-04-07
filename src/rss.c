@@ -73,6 +73,7 @@ int rss_config_port(struct rte_eth_conf *conf, struct rte_eth_dev_info *dev_info
         return 0;
     }
 
+    rss_conf = &conf->rx_adv_conf.rss_conf;
     if (g_config.rss == RSS_AUTO) {
         if (g_config.mq_rx_rss) {
             conf->rxmode.mq_mode = RTE_ETH_MQ_RX_RSS;
@@ -87,7 +88,6 @@ int rss_config_port(struct rte_eth_conf *conf, struct rte_eth_dev_info *dev_info
     }
 
     conf->rxmode.mq_mode = RTE_ETH_MQ_RX_RSS;
-    rss_conf = &conf->rx_adv_conf.rss_conf;
     rss_conf->rss_key = rss_hash_key_symmetric;
     rss_conf->rss_key_len = RSS_HASH_KEY_LENGTH,
     rss_conf->rss_hf = rss_hf;
