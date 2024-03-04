@@ -107,11 +107,17 @@ struct socket_port_table {
 struct socket_pool {
     uint32_t num;
     uint32_t next;
-    struct socket base[0] __attribute__((__aligned__(CACHE_ALIGN_SIZE)));
+    struct socket *base;
 };
 
 struct socket_table {
     uint32_t server_ip;
+
+    /* host mode */
+    uint32_t server_ip_num;
+    uint32_t server_ip_min;
+    uint32_t server_ip_max;
+
     uint16_t server_port_num;
     uint16_t server_port_min;
     uint16_t server_port_max;
@@ -125,7 +131,7 @@ struct socket_table {
     uint8_t rss_id;
     uint8_t rss_num;
     struct socket_table *socket_table_hash[256]; /* server rss hash */
-                     /*[client-ip][client-port][server-port]*/
+                     /*[client-ip][client-port][server-port][server-ip]*/
     struct socket_port_table *ht[NETWORK_PORT_NUM];
     struct socket_pool socket_pool;
 };
@@ -220,11 +226,18 @@ retry:
 }
 
 static inline struct socket *socket_port_table_get(const struct socket_table *st,
-    struct socket_port_table *t, uint16_t client_port_host, uint16_t server_port_host)
+    struct socket_port_table *t, uint16_t client_port_host, uint16_t server_port_host, uint32_t server_ip_host)
 {
     uint32_t idx = 0;
+    uint32_t client_port_idx = 0;
+    uint16_t server_port_idx = 0;
+    uint32_t server_ip_idx = 0;
 
-    idx = (client_port_host - st->client_port_min) * st->server_port_num + server_port_host - st->server_port_min;
+    client_port_idx = client_port_host - st->client_port_min;
+    server_port_idx = server_port_host - st->server_port_min;
+    server_ip_idx = server_ip_host = server_ip_host - st->server_ip_min;
+
+    idx = ((client_port_idx * st->server_port_num  + server_ip_idx) * st->server_ip_num) + server_ip_idx;
     return &t->sockets[idx];
 }
 
@@ -235,11 +248,12 @@ static inline struct socket *socket_common_lookup(const struct socket_table *st,
     struct socket_port_table *t = st->ht[client_low_2byte];
     uint16_t client_port_host = ntohs(client_port);
     uint16_t server_port_host = ntohs(server_port);
+    uint32_t server_ip_host = ntohl(server_ip);
 
     if (likely(t != NULL)  && (server_ip == st->server_ip) && (client_port != 0) &&
         (client_port_host >= st->client_port_min) && (client_port_host <= st->client_port_max) &&
         (server_port_host >= st->server_port_min) && (server_port_host <= st->server_port_max)) {
-        return socket_port_table_get(st, t, client_port_host, server_port_host);
+        return socket_port_table_get(st, t, client_port_host, server_port_host, server_ip_host);
     }
 
     return NULL;

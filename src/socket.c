@@ -28,6 +28,7 @@
 #include "net_stats.h"
 #include "csum.h"
 #include "rss.h"
+#include "work_space.h"
 #include <rte_malloc.h>
 
 const char* g_sk_states[] = {
@@ -110,6 +111,7 @@ static struct socket_port_table *socket_port_table_new(struct work_space *ws, st
     uint32_t client_ip)
 {
     int port = 0;
+    uint32_t server_ip = 0;
     uint16_t client_port = 0;
     uint16_t server_port = 0;
     struct socket *sk = NULL;
@@ -117,13 +119,14 @@ static struct socket_port_table *socket_port_table_new(struct work_space *ws, st
     struct socket_pool *sp = &st->socket_pool;
 
     table = (struct socket_port_table *)(&(sp->base[sp->next]));
-    /* skip port 0 */
     for (port = st->client_port_min; port <= st->client_port_max; port++) {
         for (server_port = st->server_port_min; server_port <= st->server_port_max; server_port++) {
             client_port = port;
-            sk = socket_port_table_get(st, table, client_port, server_port);
-            socket_init(ws, sk, client_ip, htons(client_port), st->server_ip, htons(server_port));
-            sp->next++;
+            for (server_ip = st->server_ip_min; server_ip <= st->server_ip_max; server_ip++) {
+                sk = socket_port_table_get(st, table, client_port, server_port, server_ip);
+                socket_init(ws, sk, client_ip, htons(client_port), htonl(server_ip), htons(server_port));
+                sp->next++;
+            }
         }
     }
 
@@ -227,6 +230,11 @@ int socket_table_init(struct work_space *ws)
     struct socket_table *st = &ws->socket_table;
 
     st->server_ip = ip_range_get(&port->server_ip_range, ws->queue_id);
+
+    st->server_ip_num = port->server_ip_range.num;
+    st->server_ip_min = ntohl(ip_range_get(&port->server_ip_range, 0));
+    st->server_ip_max = st->server_ip_min + st->server_ip_num - 1;
+
     st->server_port_min = cfg->listen;
     st->server_port_max = cfg->listen + cfg->listen_num - 1;
     st->server_port_num = cfg->listen_num;
@@ -239,16 +247,23 @@ int socket_table_init(struct work_space *ws)
         st->client_hop = 1;
     }
 
-    if (cfg->server) {
-        socket_port_table_init_ip_group(ws, st, &cfg->client_ip_group);
-    } else {
-        socket_port_table_init_ip_range(ws, st, &(port->client_ip_range));
-        if ((cfg->rss != RSS_NONE) && (socket_table_init_client_rss(ws) < 0)) {
-            printf("Error: worker %d has no client address, please increase the number of client address\n", ws->id);
-            return -1;
+    if (ws->socket_pool.num) {
+        if (cfg->server) {
+            socket_port_table_init_ip_group(ws, st, &cfg->client_ip_group);
+        } else {
+            socket_port_table_init_ip_range(ws, st, &(port->client_ip_range));
+    /*
+            if ((cfg->rss != RSS_NONE) && (socket_table_init_client_rss(ws) < 0)) {
+                printf("Error: worker %d has no client address, please increase the number of client address\n", ws->id);
+                return -1;
+            }
+    */
         }
     }
 
     st->socket_pool.next = 0;
+    work_space_wait_all(ws);
+
+
     return 0;
 }

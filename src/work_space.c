@@ -36,7 +36,8 @@
 
 __thread struct work_space *g_work_space;
 static struct work_space *g_work_space_all[THREAD_NUM_MAX];
-static rte_atomic32_t g_wait_count;
+static rte_atomic32_t g_wait0;
+static rte_atomic32_t g_wait1;
 
 static void work_space_init_rss(struct work_space *ws);
 
@@ -60,18 +61,24 @@ void work_space_wait_start(void)
     }
 }
 
-static void work_space_wait_all(struct work_space *ws)
+static void work_space_wait_all0(struct work_space *ws, rte_atomic32_t *count)
 {
     int num = ws->cfg->cpu_num;
     int val = 0;
 
-    rte_atomic32_inc(&g_wait_count);
+    rte_atomic32_inc(count);
     while (1) {
-        val = rte_atomic32_read(&g_wait_count);
+        val = rte_atomic32_read(count);
         if ((val > 0) && ((val % num) == 0)) {
             break;
         }
     }
+}
+
+void work_space_wait_all(struct work_space *ws)
+{
+    work_space_wait_all0(ws, &g_wait0);
+    work_space_wait_all0(ws, &g_wait1);
 }
 
 static void work_space_get_port(struct work_space *ws)
@@ -137,7 +144,6 @@ static void work_space_init_time(struct work_space *ws)
     cpu_num = ws->cfg->cpu_num;
     us = (1000ul * 1000ul * 1000ul) / (1000ul * cpu_num);
 
-    work_space_wait_all(ws);
     usleep(ws->id * us);
 
     socket_timer_init();
@@ -167,15 +173,26 @@ static struct work_space *work_space_alloc(struct config *cfg, int id)
 {
     size_t size = 0;
     uint32_t socket_num = 0;
+    struct socket *base = NULL;
     struct work_space *ws = NULL;
 
     socket_num = config_get_total_socket_num(cfg, id);
-    size = sizeof(struct work_space) + socket_num * sizeof(struct socket);
+    size = socket_num * sizeof(struct socket);
 
-    ws = (struct work_space *)rte_calloc("work_space", 1, size, CACHE_ALIGN_SIZE);
-    if (ws != NULL) {
+    ws = (struct work_space *)rte_calloc("work_space", 1, sizeof(struct work_space), CACHE_ALIGN_SIZE);
+    if (ws == NULL) {
+        return NULL;
+    }
+
+    if (socket_num == 0) {
+        return ws;
+    }
+
+    base = (struct socket *)rte_calloc("socket", 1, size, CACHE_ALIGN_SIZE);
+    if (base != NULL) {
         printf("socket allocation succeeded, memory size %0.2fGB socket num %u.\n", size * 1.0 / (1024 * 1024 * 1024), socket_num);
-        ws->socket_table.socket_pool.num = socket_num;
+        ws->socket_pool.num = socket_num;
+        ws->socket_pool.base = base;
     } else {
         printf("Error: socket allocation failed, memory size %0.2fGB socket num %u.\n", size * 1.0 / (1024 * 1024 * 1024), socket_num);
         printf("Please:\n");
@@ -231,11 +248,13 @@ struct work_space *work_space_new(struct config *cfg, int id)
         goto err;
     }
 
+    work_space_wait_all(ws);
     work_space_init_time(ws);
     cpuload_init(&ws->load);
     if (socket_table_init(ws) < 0) {
         goto err;
     }
+    work_space_wait_all(ws);
     net_stats_init(ws);
 
     if (cfg->server) {
@@ -416,5 +435,32 @@ static void work_space_init_rss(struct work_space *ws)
             idx = ws2->queue_id;
         }
         st->socket_table_hash[idx] = st2;
+    }
+}
+
+static void work_space_init_socket_pool(struct work_space *ws)
+{
+    int i = 0;
+    struct work_space *ws2 = NULL;
+    struct socket_table *st = NULL;
+
+    st = &ws->socket_table;
+    st->rss = ws->cfg->rss;
+    st->rss_id = ws->queue_id;
+    st->rss_num = ws->port->queue_num;
+
+    for (i = 0; i < THREAD_NUM_MAX; i++) {
+        ws2 = g_work_space_all[i];
+        if (ws2 == NULL) {
+            continue;
+        }
+
+        if (ws == ws2) {
+            return;
+        }
+        if (ws->port == ws2->port) {
+            ws->socket_pool = ws2->socket_pool;
+            return;
+        }
     }
 }

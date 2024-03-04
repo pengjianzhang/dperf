@@ -109,6 +109,9 @@ struct work_space {
     struct tx_queue tx_queue;
     struct rte_mbuf *mbuf_rx[NB_RXD];
     struct ip_list  dip_list;
+
+    /* all the sockets of a port  */
+    struct socket_pool socket_pool;
     struct socket_table socket_table;
 };
 
@@ -255,4 +258,5 @@ static inline bool work_space_is_local_addr(const struct work_space *ws, const s
     return (daddr == ws->port->local_ip.ip);
 }
 
+void work_space_wait_all(struct work_space *ws);
 #endif

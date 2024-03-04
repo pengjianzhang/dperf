@@ -136,13 +136,6 @@ int port_config(struct netif_port *port)
         }
     }
 
-    if (g_config.rss) {
-        if (rss_config_port(&g_port_conf, &dev_info) < 0) {
-            printf("Error: rss config port error\n");
-            return -1;
-        }
-    }
-
     if (g_config.jumbo) {
 #if RTE_VERSION < RTE_VERSION_NUM(21, 11, 0, 0)
         g_port_conf.rxmode.offloads |= DEV_RX_OFFLOAD_JUMBO_FRAME;
@@ -172,10 +165,22 @@ int port_config(struct netif_port *port)
         return -1;
     }
 
-    if (rte_eth_dev_configure(port_id, queue_num, queue_num, &g_port_conf) < 0) {
-        printf("dev configure fail\n");
-        return -1;
+    if (g_config.rss) {
+        rss_config_port(&g_port_conf, &dev_info, 1);
+        if (rte_eth_dev_configure(port_id, queue_num, queue_num, &g_port_conf) < 0) {
+            rss_config_port(&g_port_conf, &dev_info, 0);
+            if (rte_eth_dev_configure(port_id, queue_num, queue_num, &g_port_conf) < 0) {
+                printf("dev configure fail\n");
+                return -1;
+            }
+        }
+    } else {
+        if (rte_eth_dev_configure(port_id, queue_num, queue_num, &g_port_conf) < 0) {
+            printf("dev configure fail\n");
+            return -1;
+        }
     }
+
 
     for (i = 0; i < queue_num; i++) {
         if (port_init_rx(port, i, nb_rxd) < 0) {
