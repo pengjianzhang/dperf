@@ -102,7 +102,7 @@ static void dpdk_set_simd_bitwidth(struct config *cfg)
 
 static int dpdk_eal_init(struct config *cfg, char *argv0)
 {
-    int argc = 7;
+    int argc = 6;
     char log_level[64];
     char lcores[2048] = "--lcores=";
 #if RTE_VERSION >= RTE_VERSION_NUM(20, 0, 0, 0)
@@ -111,10 +111,9 @@ static int dpdk_eal_init(struct config *cfg, char *argv0)
     char flag_pci[] = "-w";
 #endif
     char socket_mem[64] = "";
-    char legacy_mem[64] = "--legacy-mem";
     char telementry[64] = "--no-telemetry";
     char file_prefix[64] = "";
-    char *argv[7 + (NETIF_PORT_MAX * PCI_NUM_MAX* 2)] = {argv0, lcores, socket_mem, legacy_mem,
+    char *argv[6 + (NETIF_PORT_MAX * PCI_NUM_MAX* 2)] = {argv0, lcores, socket_mem,
             telementry, file_prefix, log_level, NULL};
 
     sprintf(log_level, "--log-level=%d", cfg->log_level);
