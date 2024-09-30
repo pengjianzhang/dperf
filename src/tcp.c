@@ -132,7 +132,7 @@ static inline struct rte_mbuf *tcp_new_packet(struct work_space *ws, struct sock
     /* update vxlan inner header */
     if (ws->vxlan) {
         vxhs = (struct vxlan_headers *)mbuf_eth_hdr(m);
-        vxhs->uh.source = sk->lport | htons(VXLAN_SPORT_MASK);
+        vxhs->uh.source = (sk->fport + sk->lport + sk->csum_ip) | htons(VXLAN_SPORT_MASK);
 
         iph = (struct iphdr *)((uint8_t *)mbuf_eth_hdr(m) + VXLAN_HEADERS_SIZE + sizeof(struct eth_hdr));
         if (ws->ipv6) {
