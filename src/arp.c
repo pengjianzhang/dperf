@@ -152,6 +152,10 @@ static void arp_process_request(struct work_space *ws, struct rte_mbuf *m)
         return;
     }
 
+    if (ws->arp_ignore && (dip != ws->port->local_ip.ip)) {
+        mbuf_free(m);
+        return;
+    }
     arp_reply(ws, m);
 }
 
