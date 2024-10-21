@@ -86,7 +86,7 @@ static int config_parse_clear_screen(int argc, char *argv[], void *data);
 static int config_parse_log_level(int argc, char *argv[], void *data);
 static int config_parse_disable_ack(int argc, char *argv[], void *data);
 static int config_parse_retransmit_timeout(int argc, char *argv[], void *data);
-static int config_parse_arp_ignore(int argc, char *argv[], void *data);
+static int config_parse_arp_ndp_ignore(int argc, char *argv[], void *data);
 
 #define _DEFAULT_STR(s) #s
 #define DEFAULT_STR(s)  _DEFAULT_STR(s)
@@ -144,7 +144,7 @@ static struct config_keyword g_config_keywords[] = {
     {"log_level", config_parse_log_level, "error|warn|info|debug, default error"},
     {"disable_ack", config_parse_disable_ack, ""},
     {"retransmit_timeout", config_parse_retransmit_timeout, "Seconds[" DEFAULT_STR(RTO_MIN)"-" DEFAULT_STR(RTO_MAX)"], default " DEFAULT_STR(RTO_DEFAULT)},
-    {"arp_ignore", config_parse_arp_ignore, ""},
+    {"arp_ndp_ignore", config_parse_arp_ndp_ignore, ""},
     {NULL, NULL, NULL}
 };
 
@@ -1496,7 +1496,7 @@ static int config_parse_retransmit_timeout(int argc, char *argv[], void *data)
     return 0;
 }
 
-static int config_parse_arp_ignore(int argc, char *argv[], void *data)
+static int config_parse_arp_ndp_ignore(int argc, char *argv[], void *data)
 {
     struct config *cfg = data;
 
@@ -1504,7 +1504,7 @@ static int config_parse_arp_ignore(int argc, char *argv[], void *data)
         return -1;
     }
 
-    cfg->arp_ignore = true;
+    cfg->arp_ndp_ignore = true;
     return 0;
 }
 
