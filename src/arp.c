@@ -104,6 +104,10 @@ void arp_request_gw(struct work_space *ws)
         ip_range = port->local_ip_range;
     }
     arp_request_gw2(ws, port->local_ip.ip);
+
+    if (ws->arp_ignore) {
+        return;
+    }
     for (i = 0; i < ip_range->num; i++) {
         ip = ip_range_get(ip_range, i);
         arp_request_gw2(ws, ip);
