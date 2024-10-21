@@ -70,7 +70,7 @@ static void icmp6_ns_process(struct work_space *ws, struct rte_mbuf *m)
     }
 
     kni_broadcast(ws, m);
-    if (ws->arp_ndp_ignore) {
+    if (ws->neigh_ignore) {
         if (ipaddr_eq(&ws->port->local_ip, addr)) {
             mbuf_free(m);
             return;

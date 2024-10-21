@@ -105,7 +105,7 @@ void arp_request_gw(struct work_space *ws)
     }
     arp_request_gw2(ws, port->local_ip.ip);
 
-    if (ws->arp_ndp_ignore) {
+    if (ws->neigh_ignore) {
         return;
     }
     for (i = 0; i < ip_range->num; i++) {
@@ -156,7 +156,7 @@ static void arp_process_request(struct work_space *ws, struct rte_mbuf *m)
         return;
     }
 
-    if (ws->arp_ndp_ignore && (dip != ws->port->local_ip.ip)) {
+    if (ws->neigh_ignore && (dip != ws->port->local_ip.ip)) {
         mbuf_free(m);
         return;
     }
